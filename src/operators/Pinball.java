@@ -1,11 +1,18 @@
 package operators;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.stream.Collectors;
 
 /**
- * Clase que describe una juego de pinball automatico basado en numeros aleatorios. Singleton
+ * Clase que describe un juego de pinball automatico basado en numeros aleatorios. Singleton
  * 
  * @author mferndel
  *
@@ -22,13 +29,22 @@ public class Pinball implements BallGame {
 	private static Pinball instance = null;
 	/** Timer que va generando eventos del juego cada poco tiempo */
 	private final Timer gameTimer = new Timer();
-
+	/** Ruta del archivo donde se guardan las puntuaciones mas altas*/
+	private final Path HIGHSCOREPATH = Path.of("highscore.dat");
+	/** Lista con las puntuaciones mas altas del juego*/
+	private List<Integer> highscores;
 	/**
 	 * Constructor privado que solo se llama al instanciar el unico objeto del singleton
 	 */
 	private Pinball() {
 		totalPoints = 0;
 		bumpHitChance = 1f;
+		highscores = new ArrayList<Integer>();
+		try {
+			Files.lines(HIGHSCOREPATH).map(Integer::parseInt).forEach(highscores::add);
+		} catch (IOException e) {
+			System.err.println("bad highscore load");
+		}		
 	}
 
 	/**
@@ -42,6 +58,8 @@ public class Pinball implements BallGame {
 
 		return instance;
 	}
+	
+	
 
 	/**
 	 * Metodo que inicia el juego. En el juego se simula que la bola esta rebotando alrededor de las paredes y diferentes obstaculos, llamando periodicamente a
@@ -72,29 +90,42 @@ public class Pinball implements BallGame {
 	 * elaborado. Todos afectan a la probabilidad de rebotar en el siguiente turno o de caer y perder el juego.
 	 */
 	private void bump() {
-		int bumpType = rand.nextInt(10);
+		int bumpType = rand.nextInt(15);
 		int points = 0;
 		switch (bumpType) {
-		case 0, 1, 2, 3:
+		case 0, 1, 2, 3, 4:
 			bumpHitChance -= .15f;
 			points = 1500;
 			break;
 
-		case 4, 5, 6:
+		case 5, 6, 7, 8:
 			bumpHitChance += .1f;
 			points = 1000;
 			break;
-		case 7, 8:
-			bumpHitChance -= .25f;
+		case 9, 10, 11:
 			points = spikeTrap();
 			break;
-		case 9:
-			bumpHitChance += .2f;
+		case 12, 13:
 			points = bumperTrap();
+			break;
+		case 14:
+			points = jackpot();
 			break;
 		}
 		System.out.println("BUMP! you get " + points + " (fail Chance: " + failChance() + "%)");
 		totalPoints += points;
+	}
+
+	/** la bola ha chocado contra el componente que da mas puntos potencialmente, ademas asegura que el proximo lanzamiento no falle */
+	private int jackpot() {
+		int points = 0;
+		System.out.println("Amazing!! you hit jackpot!!");
+		while (bumpHitChance < 1f || points < 3000) {
+			System.out.println("DING");
+			points += 1000 + totalPoints / 10;
+			bumpHitChance += .1f;
+		}
+		return points;
 	}
 
 	/**
@@ -104,6 +135,7 @@ public class Pinball implements BallGame {
 	 * @return puntuacion restada
 	 */
 	private int spikeTrap() {
+		bumpHitChance -= .25f;
 		int points = 0;
 		int spikes = rand.nextInt(3) + 1;
 		System.out.println("OH NO Spike Trap!!");
@@ -122,6 +154,7 @@ public class Pinball implements BallGame {
 	 * @return
 	 */
 	private int bumperTrap() {
+		bumpHitChance += .2f;
 		int points = 0;
 		boolean gotOut = false;
 		System.out.println("WOW You got yourself into the bumper trap!");
@@ -141,6 +174,25 @@ public class Pinball implements BallGame {
 		System.out.println("GameOver!");
 		System.out.println("Total Points: " + totalPoints);
 		gameTimer.cancel();
+		updateHighscore();
+	}
+/**
+ *  Actualiza las puntuaciones y muestra las mas altas, pues se invoca solo al terminar el juego.
+ */
+	private void updateHighscore() {
+		highscores.add(totalPoints);
+		Collections.sort(highscores, Collections.reverseOrder());
+		
+		System.out.println("Highscore Board:");	
+		highscores.subList(0, 5).forEach(System.out::println);
+		
+		
+		List<String> stringList = highscores.stream().map(String::valueOf).collect(Collectors.toList());
+		try {
+			Files.write(HIGHSCOREPATH, stringList);
+		} catch (IOException e) {
+			System.err.println("bad highscore save");
+		}
 	}
 
 	/**
