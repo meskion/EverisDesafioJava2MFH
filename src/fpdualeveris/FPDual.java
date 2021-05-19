@@ -12,6 +12,7 @@ import operators.Pinball;
 public class FPDual {
 	/**
 	 * Metodo principal.
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
@@ -19,6 +20,7 @@ public class FPDual {
 		operatorsChallenge();
 
 	}
+
 	/**
 	 * Metodo que llama a clases y metodos del paquete operators.
 	 */

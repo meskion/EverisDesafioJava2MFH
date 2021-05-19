@@ -12,14 +12,14 @@ import java.util.TimerTask;
 import java.util.stream.Collectors;
 
 /**
- * Clase que describe un juego de pinball automatico basado en numeros aleatorios. Singleton
+ * Simula un juego de pinball automatico basado en numeros aleatorios.
  * 
  * @author mferndel
  *
  */
 public class Pinball implements BallGame {
 
-	/** Objeto Random con el que vamos a generar toda la aleatoriedad de la clase */
+	/** Objeto Random que genera la aleatoriedad de la clase */
 	private final Random rand = new Random();
 	/** Puntos totales ganados en la partida */
 	private int totalPoints;
@@ -29,12 +29,13 @@ public class Pinball implements BallGame {
 	private static Pinball instance = null;
 	/** Timer que va generando eventos del juego cada poco tiempo */
 	private final Timer gameTimer = new Timer();
-	/** Ruta del archivo donde se guardan las puntuaciones mas altas*/
+	/** Ruta del archivo donde se guardan las puntuaciones mas altas */
 	private final Path HIGHSCOREPATH = Path.of("highscore.dat");
-	/** Lista con las puntuaciones mas altas del juego*/
+	/** Lista con las puntuaciones mas altas del juego */
 	private List<Integer> highscores;
+
 	/**
-	 * Constructor privado que solo se llama al instanciar el unico objeto del singleton
+	 * Constructor privado, solo se llama al instanciar el singleton
 	 */
 	private Pinball() {
 		totalPoints = 0;
@@ -43,14 +44,14 @@ public class Pinball implements BallGame {
 		try {
 			Files.lines(HIGHSCOREPATH).map(Integer::parseInt).forEach(highscores::add);
 		} catch (IOException e) {
-			System.err.println("bad highscore load");
-		}		
+			System.err.println("ERROR: Highscore not loaded properly");
+		}
 	}
 
 	/**
-	 * Metodo static de la clase que devuelve la instancia del singleton
+	 * Devuelve la instancia del singleton
 	 * 
-	 * @return
+	 * @return instancia unica de la clase
 	 */
 	public static Pinball getInstance() {
 		if (instance == null)
@@ -58,12 +59,10 @@ public class Pinball implements BallGame {
 
 		return instance;
 	}
-	
-	
 
 	/**
-	 * Metodo que inicia el juego. En el juego se simula que la bola esta rebotando alrededor de las paredes y diferentes obstaculos, llamando periodicamente a
-	 * un timerTask para que ejecute un accion. La accion puede resultar en otro rebote o en perder, en funcion de un numero aleatorio y bumphitChance
+	 * Inicia el juego. En el juego se simula que la bola esta rebotando alrededor de las paredes y diferentes obstaculos, llamando periodicamente a un
+	 * timerTask para que ejecute un accion. La accion puede resultar en otro rebote o en perder, en funcion de una probabilidad dinamica.
 	 */
 	public void launchBall() {
 
@@ -86,29 +85,33 @@ public class Pinball implements BallGame {
 	}
 
 	/**
-	 * Simula el rebote de la bola con un componente del pinball. Cada componente da una puntuacion distinta al golpearlo. Algunos tienen un comportamiento mas
-	 * elaborado. Todos afectan a la probabilidad de rebotar en el siguiente turno o de caer y perder el juego.
+	 * Simula el rebote de la bola con un componente del pinball. Cada componente da una puntuacion distinta al golpearlo. Todos afectan a la probabilidad de
+	 * rebotar en el siguiente turno o de caer y perder el juego.
 	 */
 	private void bump() {
 		int bumpType = rand.nextInt(15);
 		int points = 0;
 		switch (bumpType) {
 		case 0, 1, 2, 3, 4:
+			// + 1500 puntos, + probabilidad de perder
 			bumpHitChance -= .15f;
 			points = 1500;
 			break;
-
 		case 5, 6, 7, 8:
+			// + 1000 puntos, - probabilidad de perder
 			bumpHitChance += .1f;
 			points = 1000;
 			break;
 		case 9, 10, 11:
+			// - N puntos, ++ Probabilidad de perder
 			points = spikeTrap();
 			break;
 		case 12, 13:
+			// + N puntos, -- Probabilidad de perder
 			points = bumperTrap();
 			break;
 		case 14:
+			// ++ N puntos, --- Probabilidad de perder
 			points = jackpot();
 			break;
 		}
@@ -116,7 +119,7 @@ public class Pinball implements BallGame {
 		totalPoints += points;
 	}
 
-	/** la bola ha chocado contra el componente que da mas puntos potencialmente, ademas asegura que el proximo lanzamiento no falle */
+	/** la bola ha chocado contra el componente que da mas puntos en potencia, ademas asegura que el proximo lanzamiento no falle */
 	private int jackpot() {
 		int points = 0;
 		System.out.println("Amazing!! you hit jackpot!!");
@@ -129,8 +132,8 @@ public class Pinball implements BallGame {
 	}
 
 	/**
-	 * Metodo que calcula los puntos restados al "chocar" con un componente. Al chocar con esta trampa se pierde un porcentaje variable de tus puntos totales,
-	 * pero nunca resta mas del ~33%
+	 * Calcula los puntos restados al "chocar" con un componente. Al chocar con esta trampa se pierde un porcentaje variable de tus puntos totales, pero nunca
+	 * resta mas del ~33%
 	 * 
 	 * @return puntuacion restada
 	 */
@@ -139,6 +142,7 @@ public class Pinball implements BallGame {
 		int points = 0;
 		int spikes = rand.nextInt(3) + 1;
 		System.out.println("OH NO Spike Trap!!");
+		// Substrae un porcentaje de los puntos totales progresivamente mas pequeño por cada pincho que toca.
 		for (int i = 1; i <= spikes; i++) {
 			points += totalPoints / (4 ^ i);
 		}
@@ -160,6 +164,7 @@ public class Pinball implements BallGame {
 		System.out.println("WOW You got yourself into the bumper trap!");
 		String[] sounds = { "CLINK", "CLONK", "CLUNK", "BONK", "CLANK" };
 		do {
+			// Probabildad de 50% de salir del bucle cada vuelta, al menos da 500 puntos
 			points += rand.nextInt(100) + 100;
 			System.out.println(sounds[rand.nextInt(5)]);
 			gotOut = rand.nextBoolean();
@@ -168,7 +173,7 @@ public class Pinball implements BallGame {
 	}
 
 	/**
-	 * Metodo que se invoca al perder el juego, muestra los puntos totales y detiene el Timer.
+	 * Se invoca al perder el juego, muestra los puntos totales y detiene el Timer.
 	 */
 	private void fail() {
 		System.out.println("GameOver!");
@@ -176,22 +181,22 @@ public class Pinball implements BallGame {
 		gameTimer.cancel();
 		updateHighscore();
 	}
-/**
- *  Actualiza las puntuaciones y muestra las mas altas, pues se invoca solo al terminar el juego.
- */
+
+	/**
+	 * Actualiza las puntuaciones y muestra las mas altas, pues se invoca solo al terminar el juego.
+	 */
 	private void updateHighscore() {
 		highscores.add(totalPoints);
 		Collections.sort(highscores, Collections.reverseOrder());
-		
-		System.out.println("Highscore Board:");	
+
+		System.out.println("Highscore Board:");
 		highscores.subList(0, 5).forEach(System.out::println);
-		
-		
+
 		List<String> stringList = highscores.stream().map(String::valueOf).collect(Collectors.toList());
 		try {
 			Files.write(HIGHSCOREPATH, stringList);
 		} catch (IOException e) {
-			System.err.println("bad highscore save");
+			System.err.println("ERROR: Highscore not saved properly");
 		}
 	}
 
