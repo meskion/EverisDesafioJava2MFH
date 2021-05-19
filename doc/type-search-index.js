@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes","u":"allclasses-index.html"},{"p":"operators","l":"BallGame"},{"p":"variables","l":"Developer"},{"p":"variables","l":"DevLimitException"},{"p":"fpdualeveris","l":"FPDual"},{"p":"operators","l":"Pinball"}];updateSearchResults();
+typeSearchIndex = [{"l":"All Classes","u":"allclasses-index.html"},{"p":"variables","l":"Developer"},{"p":"variables","l":"DevLimitException"},{"p":"fpdualeveris","l":"FPDual"}];updateSearchResults();
